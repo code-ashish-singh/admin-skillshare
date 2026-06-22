@@ -8,18 +8,26 @@ const api = axios.create({
   withCredentials: true,
 });
 
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("ss_admin_token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
 export function AuthProvider({ children }) {
   const [admin, setAdmin] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const token = localStorage.getItem("ss_admin_token");
+    if (!token) { setLoading(false); return; }
     api.get("/auth/me")
       .then(res => {
         const user = res.data.data.user;
         if (user.role === "superAdmin") setAdmin(user);
-        else setAdmin(null);
+        else { localStorage.removeItem("ss_admin_token"); setAdmin(null); }
       })
-      .catch(() => setAdmin(null))
+      .catch(() => { localStorage.removeItem("ss_admin_token"); setAdmin(null); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -30,6 +38,8 @@ export function AuthProvider({ children }) {
       if (user.role !== "superAdmin") {
         return { success: false, message: "Access denied. Admin only." };
       }
+      const token = res.data.data.token;
+      if (token) localStorage.setItem("ss_admin_token", token);
       setAdmin(user);
       return { success: true };
     } catch (err) {
@@ -38,7 +48,8 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
-    await api.post("/auth/logout");
+    try { await api.post("/auth/logout"); } catch {}
+    localStorage.removeItem("ss_admin_token");
     setAdmin(null);
   };
 
