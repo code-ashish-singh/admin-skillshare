@@ -1,4 +1,7 @@
 {
   "installCommand": "npm install --legacy-peer-deps",
+  "env": {
+    "VITE_API_URL": "https://skillshare-backend-g1ec.onrender.com/api"
+  },
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
